@@ -78,7 +78,7 @@ const chatTools = {
       if (!user) return { error: 'Customer not found' }
 
       const maskedEmail = user.email ? user.email.replace(/[aeiou]/gi, '*') : undefined
-      const order = await db.ordersCollection.findOne({ orderId })
+      const order = await db.ordersCollection.findOne({ orderId: { $eq: orderId } })
 
       if (!order) return { error: 'Order not found' }
       if (order.email !== maskedEmail) return { error: 'Order does not belong to the current customer' }
