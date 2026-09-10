@@ -65,7 +65,7 @@ export function quantityCheckBeforeBasketItemAddition () {
 export function quantityCheckBeforeBasketItemUpdate () {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const item = await BasketItemModel.findOne({ where: { id: req.params.id } })
+      const item = await BasketItemModel.findOne({ where: { id: Number(req.params.id) } })
       const user = security.authenticatedUsers.from(req)
       challengeUtils.solveIf(challenges.basketManipulateChallenge, () => { return user && req.body.BasketId && user.bid != req.body.BasketId }) // eslint-disable-line eqeqeq
       if (req.body.quantity) {
@@ -83,7 +83,7 @@ export function quantityCheckBeforeBasketItemUpdate () {
 }
 
 async function quantityCheck (req: Request, res: Response, next: NextFunction, id: number, quantity: number) {
-  const product = await QuantityModel.findOne({ where: { ProductId: id } })
+  const product = await QuantityModel.findOne({ where: { ProductId: Number(id) } })
   if (product == null) {
     throw new Error('No such product found!')
   }

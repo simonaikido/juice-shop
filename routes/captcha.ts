@@ -34,7 +34,7 @@ export function captchas () {
 
 export const verifyCaptcha = () => async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const captcha = await CaptchaModel.findOne({ where: { captchaId: req.body.captchaId } })
+    const captcha = await CaptchaModel.findOne({ where: { captchaId: Number(req.body.captchaId) } })
     if ((captcha != null) && req.body.captcha === captcha.answer) {
       next()
     } else {
