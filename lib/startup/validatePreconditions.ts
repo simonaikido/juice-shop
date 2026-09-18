@@ -196,7 +196,15 @@ export const checkIfPortIsAvailable = async (port: number | string) => {
 export const checkIfRequiredFileExists = async (pathRelativeToProjectRoot: string) => {
   const fileName = pathRelativeToProjectRoot.substr(pathRelativeToProjectRoot.lastIndexOf('/') + 1)
 
-  return await access(path.resolve(pathRelativeToProjectRoot)).then(() => {
+  const base = path.resolve('.')
+  const target = path.resolve(base, pathRelativeToProjectRoot)
+  const relative = path.relative(base, target)
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    logger.warn(`Required file ${colors.bold(fileName)} is missing (${colors.red('ERROR')})`)
+    return false
+  }
+
+  return await access(target).then(() => {
     logger.info(`Required file ${colors.bold(fileName)} is present (${colors.green('SUCCESS')})`)
     return true
   }).catch(() => {
@@ -207,7 +215,13 @@ export const checkIfRequiredFileExists = async (pathRelativeToProjectRoot: strin
 
 export const checkIfRequiredFilePatternExists = async (directory: string, pattern: RegExp) => {
   try {
-    const files = await readdir(path.resolve(directory))
+    const resolvedDirectory = path.resolve(directory)
+    const relativePath = path.relative(process.cwd(), resolvedDirectory)
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      logger.warn(`Required file matching ${colors.bold(String(pattern))} is missing (${colors.red('ERROR')})`)
+      return false
+    }
+    const files = await readdir(resolvedDirectory)
     const match = files.find(file => pattern.test(file))
     if (match) {
       logger.info(`Required file matching ${colors.bold(String(pattern))} is present (${colors.green('SUCCESS')})`)

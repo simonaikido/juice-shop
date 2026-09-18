@@ -71,8 +71,15 @@ module.exports = function (grunt) {
   grunt.registerTask('checksum', 'Create .md5 checksum files', function () {
     const fs = require('node:fs')
     const crypto = require('node:crypto')
+    const path = require('node:path')
+    const base = path.resolve('dist/')
     fs.readdirSync('dist/').forEach(file => {
-      const buffer = fs.readFileSync('dist/' + file)
+      const target = path.resolve(base, file)
+      const relative = path.relative(base, target)
+      if (relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new Error('Invalid file path')
+      }
+      const buffer = fs.readFileSync(target)
       const md5 = crypto.createHash('md5')
       md5.update(buffer)
       const md5Hash = md5.digest('hex')

@@ -5,10 +5,15 @@ import logger from '../lib/logger'
 import { type ChallengeKey } from 'models/challenge'
 
 export async function loadStaticData (file: string) {
-  const filePath = path.resolve('./data/static/' + file + '.yml')
-  return await readFile(filePath, 'utf8')
+  const base = path.resolve('./data/static/')
+  const target = path.resolve(base, file + '.yml')
+  const relative = path.relative(base, target)
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('Invalid file path')
+  }
+  return await readFile(target, 'utf8')
     .then(safeLoad)
-    .catch(() => logger.error('Could not open file: "' + filePath + '"'))
+    .catch(() => logger.error('Could not open file: "' + target + '"'))
 }
 
 export interface StaticUser {

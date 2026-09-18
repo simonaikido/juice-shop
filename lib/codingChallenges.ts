@@ -21,9 +21,16 @@ export const findFilesWithCodeChallenges = async (paths: readonly string[]): Pro
     try {
       if ((await fs.lstat(currPath)).isDirectory()) {
         const files = await fs.readdir(currPath)
-        const moreMatches = await findFilesWithCodeChallenges(
-          files.map(file => path.resolve(currPath, file))
-        )
+        const resolvedBase = path.resolve(currPath)
+        const resolvedFiles = files.map(file => {
+          const target = path.resolve(resolvedBase, file)
+          const relative = path.relative(resolvedBase, target)
+          if (relative.startsWith('..') || path.isAbsolute(relative)) {
+            throw new Error('Invalid file path')
+          }
+          return target
+        })
+        const moreMatches = await findFilesWithCodeChallenges(resolvedFiles)
         matches.push(...moreMatches)
       } else {
         const code = await fs.readFile(currPath, 'utf8')
