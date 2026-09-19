@@ -8,6 +8,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { type Request, type Response, type NextFunction } from 'express'
 import logger from '../lib/logger'
 import * as utils from '../lib/utils'
+import path from 'node:path'
 
 export function getLanguageList () {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -27,8 +28,16 @@ export function getLanguageList () {
 
       const languageFiles = await readdir('frontend/dist/frontend/assets/i18n/')
 
+      const frontendBase = path.resolve('frontend/dist/frontend/assets/i18n/')
+      const backendBase = path.resolve('i18n/')
+
       const languagePromises = languageFiles.map(async (fileName) => {
-        const content = await readFile('frontend/dist/frontend/assets/i18n/' + fileName, 'utf-8')
+        const frontendTarget = path.resolve(frontendBase, fileName)
+        const frontendRelative = path.relative(frontendBase, frontendTarget)
+        if (frontendRelative.startsWith('..') || path.isAbsolute(frontendRelative)) {
+          throw new Error('Invalid file path')
+        }
+        const content = await readFile(frontendTarget, 'utf-8')
         const fileContent = JSON.parse(content)
         const frontendPercentage = calcPercentage(fileContent, enContent)
         const key = fileName.substring(0, fileName.indexOf('.'))
@@ -37,7 +46,12 @@ export function getLanguageList () {
         let backendPercentage = 0
         if (backendEnContent !== null) {
           try {
-            const backendContent = await readFile('i18n/' + fileName, 'utf-8')
+            const backendTarget = path.resolve(backendBase, fileName)
+            const backendRelative = path.relative(backendBase, backendTarget)
+            if (backendRelative.startsWith('..') || path.isAbsolute(backendRelative)) {
+              throw new Error('Invalid file path')
+            }
+            const backendContent = await readFile(backendTarget, 'utf-8')
             const backendFileContent = JSON.parse(backendContent)
             backendPercentage = calcPercentage(backendFileContent, backendEnContent)
           } catch {
