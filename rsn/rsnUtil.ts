@@ -63,7 +63,13 @@ const computeDiffs = async (keys: string[]) => {
     try {
       const snippet = await retrieveCodeSnippet(val.split('_')[0])
       if (snippet == null) continue
-      const fileData = fs.readFileSync(fixesPath + '/' + val).toString()
+      const resolvedBase = path.resolve(fixesPath)
+      const resolvedTarget = path.resolve(resolvedBase, val)
+      const relativePath = path.relative(resolvedBase, resolvedTarget)
+      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+        throw new Error('Invalid file path')
+      }
+      const fileData = fs.readFileSync(resolvedTarget).toString()
       const diff = diffLines(filterString(fileData), filterString(snippet.snippet))
       let line = 0
       for (const part of diff) {
@@ -130,8 +136,14 @@ function findChangedFiles (current: CacheData, cached: CacheData): string[] {
 
 function loadChallengeInfo (challengeName: string): ChallengeInfo | null {
   const infoPath = `${fixesPath}/${challengeName}.info.yml`
-  if (!fs.existsSync(infoPath)) return null
-  const content = fs.readFileSync(infoPath, 'utf-8')
+  const base = path.resolve(fixesPath)
+  const target = path.resolve(base, `${challengeName}.info.yml`)
+  const relative = path.relative(base, target)
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return null
+  }
+  if (!fs.existsSync(target)) return null
+  const content = fs.readFileSync(target, 'utf-8')
   return yaml.load(content) as ChallengeInfo
 }
 
@@ -152,7 +164,13 @@ async function computeChallengeDiff (file: string): Promise<ChallengeDiff | null
   const snippet = await retrieveCodeSnippet(challengeName)
   if (!snippet) return null
 
-  const fileData = fs.readFileSync(fixesPath + '/' + file).toString()
+  const base = path.resolve(fixesPath)
+  const target = path.resolve(base, file)
+  const relative = path.relative(base, target)
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return null
+  }
+  const fileData = fs.readFileSync(target).toString()
   const patch = structuredPatch(file, file, filterString(snippet.snippet), filterString(fileData))
 
   const lines: DiffLine[] = []
